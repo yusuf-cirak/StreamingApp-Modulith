@@ -17,6 +17,10 @@ public interface ICurrentUserService
 public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
 {
     public Option<ClaimsPrincipal> User { get; } = httpContextAccessor.HttpContext?.User;
-    public Option<string> UserId { get; } = httpContextAccessor.HttpContext?.User?.GetUserId() ?? Option<string>.None();
+
+    public Option<string> UserId { get; } = httpContextAccessor.HttpContext
+        .ToOption()
+        .Bind(ctx => ctx.User.GetUserId());
+    
     public bool IsAuthenticated { get; } = httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 }
