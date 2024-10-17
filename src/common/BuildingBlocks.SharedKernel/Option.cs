@@ -30,6 +30,8 @@ public record Option<T> : IOption
         return _hasValue;
     }
 
+    public TResult Match<TResult>(Func<TResult> none, Func<T, TResult> some) => _hasValue ? some(_content) : none();
+
     public Option<TResult> Map<TResult>(Func<T, TResult> map)
         => _hasValue ? Option<TResult>.Some(map(_content)) : Option<TResult>.None();
 
@@ -48,6 +50,7 @@ file static class OptionCache<T>
 public static class OptionExtensions
 {
     public static Option<T> ToOption<T>(this T? value) => Option<T>.Create(value);
+
     public static Option<T> FirstOrNone<T>(this IEnumerable<T> source, Func<T, bool> predicate)
         => source
             .Where(predicate)
