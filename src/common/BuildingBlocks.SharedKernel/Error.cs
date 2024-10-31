@@ -29,9 +29,6 @@ public record Error : IError
     public static Error Create(string code,string message, int status) => new(code, message, status);
     
     public static implicit operator Error (string message) => new(string.Empty, message);
-    
-    public static implicit operator Result(Error error) => Result.Failure(error);
-    
 }
 
 

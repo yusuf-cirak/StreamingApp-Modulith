@@ -1,6 +1,9 @@
 ﻿namespace BuildingBlocks.SharedKernel;
 
-public interface IResult;
+public interface IResult
+{
+    bool IsSuccess { get; }
+}
 
 public record Result : IResult
 {
@@ -10,7 +13,7 @@ public record Result : IResult
 
     public bool IsFailure => !IsSuccess;
 
-    internal Result(Error error)
+    private Result(Error error)
     {
         Error = error;
         IsSuccess = false;
@@ -21,7 +24,7 @@ public record Result : IResult
         IsSuccess = isSuccess;
     }
 
-    public static Result Success() => ResultCache.Success;
+    public static Result Success => ResultCache.Success;
 
     public static Result Failure(Error error) => new(error);
 
