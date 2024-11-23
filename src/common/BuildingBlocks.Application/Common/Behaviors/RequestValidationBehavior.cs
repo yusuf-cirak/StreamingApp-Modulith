@@ -8,7 +8,7 @@ namespace BuildingBlocks.Application.Common.Behaviors;
 public sealed class RequestValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : IResult, new()
+    where TResponse : Result
 {
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
@@ -28,9 +28,9 @@ public sealed class RequestValidationBehavior<TRequest, TResponse>(IEnumerable<I
 
         if (validationErrorMessage.Length > 0)
         {
-            var response = ResultExtensions.Create(validationErrorMessage);
+            var response = Result.Failure(Error.Create(string.Empty, validationErrorMessage));
 
-            return Task.FromResult((TResponse)response);
+            return Task.FromResult(response as TResponse)!;
         }
 
         return next();

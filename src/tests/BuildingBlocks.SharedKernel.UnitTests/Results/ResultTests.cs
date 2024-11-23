@@ -74,7 +74,7 @@
             var value = 100;
 
             // Act
-            var result = Result<int, Error>.Success(value);
+            var result = Result<int>.Success(value);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -88,7 +88,7 @@
             Error error = Error.Create("Error.Test", "Implicit error");
 
             // Act
-            var result = Result<int, Error>.Failure(error);
+            var result = Result<int>.Failure(error);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -100,10 +100,10 @@
         public void Result_Match_ReturnsSuccessOrFailureBasedOnGenericResult()
         {
             // Arrange
-            var successResult = Result<int, Error>.Success(200);
+            var successResult = Result<int>.Success(200);
             Error error = Error.Create("Error.Test", "Error occurred");
 
-            var failureResult = Result<int, Error>.Failure(error);
+            var failureResult = Result<int>.Failure(error);
 
             // Act
             var successMessage = successResult.Match(
@@ -125,7 +125,7 @@
             int value = 300;
 
             // Act
-            Result<int, Error> result = value;
+            Result<int> result = value;
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -138,7 +138,7 @@
             // Arrange
             var error = Error.Create("Error.Test", "Implicit error");
             // Act
-            Result<int, Error> result = error;
+            Result<int> result = error;
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -194,11 +194,11 @@
             var value = "Success value";
 
             // Act
-            var result = ResultExtensions.Create<string, Error>(value);
+            var result = ResultExtensions.Create<string>(value);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(value, ((Result<string, Error>)result).Value);
+            Assert.Equal(value, ((Result<string>)result).Value);
         }
     }
 }

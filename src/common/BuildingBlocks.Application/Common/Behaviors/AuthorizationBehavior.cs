@@ -8,7 +8,7 @@ namespace BuildingBlocks.Application.Common.Behaviors;
 public sealed class AuthorizationBehavior<TRequest, TResponse>(IHttpContextAccessor httpContextAccessor)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ISecuredRequest
-    where TResponse : IResult, new()
+    where TResponse : Result
 {
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,

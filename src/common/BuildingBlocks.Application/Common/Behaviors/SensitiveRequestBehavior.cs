@@ -8,7 +8,7 @@ namespace BuildingBlocks.Application.Common.Behaviors;
 
 public sealed class SensitiveRequestBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>, ISensitiveRequest
-    where TResponse : IResult , new()
+    where TResponse : Result
 {
     private readonly ICurrentUserService _currentUserService;
     private readonly IBlackListManager _blacklistManager;

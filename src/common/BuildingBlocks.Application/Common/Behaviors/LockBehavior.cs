@@ -7,7 +7,7 @@ namespace BuildingBlocks.Application.Common.Behaviors;
 
 public sealed class LockBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>, ILockRequest
-    where TResponse : IResult, new()
+    where TResponse : Result
 {
     private readonly ICacheService _cacheService;
 

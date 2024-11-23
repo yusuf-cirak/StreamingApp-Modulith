@@ -1,8 +1,6 @@
 ﻿namespace BuildingBlocks.SharedKernel;
 
-public interface IError;
-
-public record Error : IError
+public record Error
 {
     public string Code { get; private set; } = string.Empty;
     public string Message { get; private set; } = string.Empty;
