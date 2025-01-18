@@ -1,26 +1,24 @@
 ﻿using BuildingBlocks.Application.Abstractions.Security;
+using BuildingBlocks.Application.Common.Services;
 using BuildingBlocks.SharedKernel;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 
 namespace BuildingBlocks.Application.Common.Behaviors;
 
-public sealed class AuthorizationBehavior<TRequest, TResponse>(IHttpContextAccessor httpContextAccessor)
+public sealed class AuthorizationBehavior<TRequest, TResponse>(ICurrentUserService currentUserService)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ISecuredRequest
     where TResponse : Result
 {
-
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+    public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        var claims = httpContextAccessor.HttpContext?.User.Claims.ToList();
-
-        if (claims is null or { Count: 0 })
+        if (!currentUserService.IsAuthenticated)
         {
-            return (TResponse)ResultCache.Unauthorized;
+            var result = ResultCache.Unauthorized.ToTypedResult<TResponse>();
+            return Task.FromResult(result);
         }
 
-        return await next();
+        return next();
     }
 }

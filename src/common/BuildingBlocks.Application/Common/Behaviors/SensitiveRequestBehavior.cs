@@ -1,37 +1,36 @@
-﻿using BuildingBlocks.Application.Abstractions.Managers;
-using BuildingBlocks.Application.Abstractions.Security;
+﻿using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Services;
 using BuildingBlocks.SharedKernel;
 using MediatR;
+using BuildingBlocks.Application.Abstractions.Managers;
 
 namespace BuildingBlocks.Application.Common.Behaviors;
 
-public sealed class SensitiveRequestBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>, ISensitiveRequest
+public sealed class SensitiveRequestBehavior<TRequest, TResponse>(
+    ICurrentUserService currentUserService,
+    IBlackListManager blacklistManager)
+    : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : ISensitiveRequest
     where TResponse : Result
 {
-    private readonly ICurrentUserService _currentUserService;
-    private readonly IBlackListManager _blacklistManager;
-
-
-    public SensitiveRequestBehavior(ICurrentUserService currentUserService, IBlackListManager blacklistManager)
+    private static TResponse CreateUnauthorizedResult()
     {
-        _currentUserService = currentUserService;
-        _blacklistManager = blacklistManager;
+        return ResultCache.Unauthorized.ToTypedResult<TResponse>();
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.UserId.ToString();
+        if (!currentUserService.IsAuthenticated)
+        {
+            return CreateUnauthorizedResult();
+        }
 
-        var blacklistResult = await _blacklistManager.IsBlackListedAsync(userId);
-
+        var blacklistResult = await blacklistManager.IsBlackListedAsync(currentUserService.UserId.GetValueOrFail());
+        
         if (blacklistResult.IsSuccess)
         {
-            var response = ResultCache.Unauthorized;
-
-            return (TResponse)response;
+            return CreateUnauthorizedResult();
         }
 
         return await next();

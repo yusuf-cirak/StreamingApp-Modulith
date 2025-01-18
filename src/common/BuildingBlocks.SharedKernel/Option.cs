@@ -4,19 +4,20 @@ public interface IOption;
 
 public record Option<T> : IOption
 {
+    public bool HasValue { get; }
+    
     private readonly T _content;
-    private readonly bool _hasValue;
 
     private Option(T content)
     {
         _content = content;
-        _hasValue = true;
+        HasValue = true;
     }
 
     internal Option()
     {
         _content = default!;
-        _hasValue = false;
+        HasValue = false;
     }
 
     public static Option<T> Create(T? value) => value is not null ? Some(value) : None();
@@ -27,16 +28,19 @@ public record Option<T> : IOption
     public bool TryGetValue(out T value)
     {
         value = _content;
-        return _hasValue;
+        return HasValue;
     }
+    
+    public T GetValueOrDefault() => _content;
+    public T GetValueOrFail() => HasValue ? _content : throw new NoneException($"Expected value of type {typeof(T).Name} but got None");
 
-    public TResult Match<TResult>(Func<TResult> none, Func<T, TResult> some) => _hasValue ? some(_content) : none();
+    public TResult Match<TResult>(Func<TResult> none, Func<T, TResult> some) => HasValue ? some(_content) : none();
 
     public Option<TResult> Map<TResult>(Func<T, TResult> map)
-        => _hasValue ? Option<TResult>.Some(map(_content)) : Option<TResult>.None();
+        => HasValue ? Option<TResult>.Some(map(_content)) : Option<TResult>.None();
 
     public Option<TResult> Bind<TResult>(Func<T, Option<TResult>> bind)
-        => _hasValue ? bind(_content) : Option<TResult>.None();
+        => HasValue ? bind(_content) : Option<TResult>.None();
 
 
     public static implicit operator Option<T>(T? value) => value is not null ? Some(value) : None();
@@ -75,3 +79,6 @@ public static class OptionExtensions
     public static Option<T> Where<T>(this Option<T> option, Func<T, bool> predicate)
         => option.Bind(value => predicate(value) ? option : Option<T>.None());
 }
+
+
+public sealed class NoneException(string message) : Exception(message);

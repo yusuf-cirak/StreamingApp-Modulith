@@ -14,13 +14,18 @@ public interface ICurrentUserService
     public bool IsAuthenticated { get; }
 }
 
-public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
+public sealed class CurrentUserService : ICurrentUserService
 {
-    public Option<ClaimsPrincipal> User { get; } = httpContextAccessor.HttpContext?.User;
+    public Option<ClaimsPrincipal> User { get; }
 
-    public Option<string> UserId { get; } = httpContextAccessor.HttpContext
-        .ToOption()
-        .Bind(ctx => ctx.User.GetUserId());
-    
-    public bool IsAuthenticated { get; } = httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+    public Option<string> UserId { get; }
+
+    public bool IsAuthenticated => UserId.HasValue;
+
+
+    public CurrentUserService(IHttpContextAccessor ctxAccessor)
+    {
+        User = ctxAccessor.HttpContext?.User;
+        UserId = User.Bind(u => u.GetUserId());
+    }
 }

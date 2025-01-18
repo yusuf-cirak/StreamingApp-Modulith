@@ -13,4 +13,5 @@ public abstract record EntityId<TId>(TId Value) : ValueObject
 public sealed record GuidEntityId(Guid Value) : EntityId<Guid>(Value)
 {
     public static GuidEntityId Create() => new(Guid.NewGuid());
+
 }

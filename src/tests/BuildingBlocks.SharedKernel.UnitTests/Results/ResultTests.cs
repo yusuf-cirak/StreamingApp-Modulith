@@ -6,7 +6,7 @@
         public void Result_Success_ReturnsSuccessInstance()
         {
             // Act
-            var result = Result.Success;
+            var result = Result.Success();
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -32,7 +32,7 @@
         public void Result_Match_ReturnsSuccessOrFailureBasedOnResult()
         {
             // Arrange
-            var successResult = Result.Success;
+            var successResult = Result.Success();
             var error = Error.Create("Error.Test", "Error occurred");
 
             var failureResult = Result.Failure(error);

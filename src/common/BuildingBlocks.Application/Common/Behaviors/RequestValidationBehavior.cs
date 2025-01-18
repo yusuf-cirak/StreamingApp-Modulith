@@ -28,9 +28,8 @@ public sealed class RequestValidationBehavior<TRequest, TResponse>(IEnumerable<I
 
         if (validationErrorMessage.Length > 0)
         {
-            var response = Result.Failure(Error.Create(string.Empty, validationErrorMessage));
-
-            return Task.FromResult(response as TResponse)!;
+            var result = Result.Failure(validationErrorMessage).ToTypedResult<TResponse>();
+            return Task.FromResult(result);
         }
 
         return next();

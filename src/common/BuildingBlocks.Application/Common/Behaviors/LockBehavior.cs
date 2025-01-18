@@ -24,8 +24,7 @@ public sealed class LockBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         {
             if (!lockAcquired)
             {
-
-                return (TResponse)ResultCache.Forbidden;
+                return ResultCache.Forbidden.ToTypedResult<TResponse>();
             }
 
             return await next();
