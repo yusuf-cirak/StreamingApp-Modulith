@@ -1,4 +1,4 @@
-﻿using BuildingBlocks.SharedKernel;
+﻿
 
 namespace BuildingBlocks.Application.Abstractions.Managers;
 

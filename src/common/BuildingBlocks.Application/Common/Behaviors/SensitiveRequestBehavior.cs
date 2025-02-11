@@ -1,6 +1,5 @@
 ﻿using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Services;
-using BuildingBlocks.SharedKernel;
 using MediatR;
 using BuildingBlocks.Application.Abstractions.Managers;
 

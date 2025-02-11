@@ -2,9 +2,8 @@ using BuildingBlocks.Application.Abstractions.Managers;
 using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Behaviors;
 using BuildingBlocks.Application.Common.Services;
-using BuildingBlocks.SharedKernel;
 using MediatR;
-using Xunit;
+using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 

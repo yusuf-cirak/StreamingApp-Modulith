@@ -1,9 +1,8 @@
 using BuildingBlocks.Application.Abstractions.Caching;
 using BuildingBlocks.Application.Abstractions.Locking;
 using BuildingBlocks.Application.Common.Behaviors;
-using BuildingBlocks.SharedKernel;
 using MediatR;
-using Xunit;
+using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 

@@ -1,9 +1,7 @@
 using BuildingBlocks.Application.Common.Behaviors;
-using BuildingBlocks.SharedKernel;
 using FluentValidation;
-using FluentValidation.Results;
 using MediatR;
-using Xunit;
+using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 

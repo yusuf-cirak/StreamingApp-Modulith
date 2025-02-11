@@ -1,5 +1,4 @@
 ﻿using System.Security.Claims;
-using BuildingBlocks.SharedKernel;
 
 namespace BuildingBlocks.Application.Common.Extensions;
 

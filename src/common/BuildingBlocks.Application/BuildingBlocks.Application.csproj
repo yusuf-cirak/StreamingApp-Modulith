@@ -13,12 +13,8 @@
     
     
     <ItemGroup>
-      <ProjectReference Include="..\BuildingBlocks.SharedKernel\BuildingBlocks.SharedKernel.csproj" />
-    </ItemGroup>
-    
-    
-    <ItemGroup>
       <PackageReference Include="FluentValidation" Version="11.11.0" />
       <PackageReference Include="MediatR" Version="12.4.1" />
+      <PackageReference Include="YC.Monad" Version="1.0.0" />
     </ItemGroup>
 </Project>

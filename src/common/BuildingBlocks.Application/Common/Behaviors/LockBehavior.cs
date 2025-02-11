@@ -1,6 +1,5 @@
 ﻿using BuildingBlocks.Application.Abstractions.Caching;
 using BuildingBlocks.Application.Abstractions.Locking;
-using BuildingBlocks.SharedKernel;
 using MediatR;
 
 namespace BuildingBlocks.Application.Common.Behaviors;

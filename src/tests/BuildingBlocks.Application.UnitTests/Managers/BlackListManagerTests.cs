@@ -1,7 +1,6 @@
-using Xunit;
 using BuildingBlocks.Application.Abstractions.Managers;
-using BuildingBlocks.SharedKernel;
 using System.Collections.Concurrent;
+using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Managers;
 

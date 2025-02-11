@@ -1,11 +1,11 @@
 using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Behaviors;
-using BuildingBlocks.SharedKernel;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using BuildingBlocks.Application.Common.Services;
 using Xunit;
+using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 

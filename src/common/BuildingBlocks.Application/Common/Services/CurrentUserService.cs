@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using BuildingBlocks.Application.Common.Extensions;
-using BuildingBlocks.SharedKernel;
 using Microsoft.AspNetCore.Http;
 
 namespace BuildingBlocks.Application.Common.Services;

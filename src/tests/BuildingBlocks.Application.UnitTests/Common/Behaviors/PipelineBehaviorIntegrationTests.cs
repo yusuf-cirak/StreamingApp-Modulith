@@ -4,13 +4,13 @@ using BuildingBlocks.Application.Abstractions.Managers;
 using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Behaviors;
 using BuildingBlocks.Application.Common.Services;
-using BuildingBlocks.SharedKernel;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 using Xunit;
+using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 
