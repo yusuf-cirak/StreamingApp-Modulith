@@ -2,13 +2,15 @@ using BuildingBlocks.Application.Abstractions.Caching;
 using BuildingBlocks.Application.Abstractions.Locking;
 using BuildingBlocks.Application.Common.Behaviors;
 using MediatR;
-using YC.Monad;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Xunit;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 
 public class LockBehaviorTests
 {
-    private class TestLockRequest : IRequest<Result>, ILockRequest
+    private class TestLockRequest : IRequest<IResult>, ILockRequest
     {
         public string Key { get; set; } = "test-key";
         public int Expiration { get; set; } = 30;
@@ -61,10 +63,10 @@ public class LockBehaviorTests
     {
         // Arrange
         var cacheService = new TestCacheService(lockAcquired: true);
-        var behavior = new LockBehavior<TestLockRequest, Result>(cacheService);
+        var behavior = new LockBehavior<TestLockRequest, IResult>(cacheService);
         var request = new TestLockRequest();
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -79,15 +81,14 @@ public class LockBehaviorTests
     {
         // Arrange
         var cacheService = new TestCacheService(lockAcquired: false);
-        var behavior = new LockBehavior<TestLockRequest, Result>(cacheService);
+        var behavior = new LockBehavior<TestLockRequest, IResult>(cacheService);
         var request = new TestLockRequest();
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Forbidden, result.Error);
+        Assert.IsType<ForbidHttpResult>(result);
         Assert.False(cacheService.WasLockReleased);
     }
 
@@ -96,10 +97,10 @@ public class LockBehaviorTests
     {
         // Arrange
         var cacheService = new TestCacheService(lockAcquired: true);
-        var behavior = new LockBehavior<TestLockRequest, Result>(cacheService);
+        var behavior = new LockBehavior<TestLockRequest, IResult>(cacheService);
         var request = new TestLockRequest { ReleaseImmediately = false };
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -114,9 +115,9 @@ public class LockBehaviorTests
     {
         // Arrange
         var cacheService = new TestCacheService(lockAcquired: true);
-        var behavior = new LockBehavior<TestLockRequest, Result>(cacheService);
+        var behavior = new LockBehavior<TestLockRequest, IResult>(cacheService);
         var request = new TestLockRequest();
-        RequestHandlerDelegate<Result> next = () => throw new Exception("Test exception");
+        RequestHandlerDelegate<IResult> next = () => throw new Exception("Test exception");
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => behavior.Handle(request, next, CancellationToken.None));

@@ -1,13 +1,15 @@
 ﻿using BuildingBlocks.Application.Abstractions.Caching;
 using BuildingBlocks.Application.Abstractions.Locking;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 
 namespace BuildingBlocks.Application.Common.Behaviors;
 
 public sealed class LockBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>, ILockRequest
-    where TResponse : Result
+    where TResponse : IResult
 {
+    private static readonly TResponse ForbiddenResult = (TResponse)Results.Forbid();
     private readonly ICacheService _cacheService;
 
     public LockBehavior(ICacheService cacheService)
@@ -23,7 +25,7 @@ public sealed class LockBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         {
             if (!lockAcquired)
             {
-                return ResultCache.Forbidden.ToTypedResult<TResponse>();
+                return ForbiddenResult;
             }
 
             return await next();

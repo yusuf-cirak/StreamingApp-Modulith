@@ -2,16 +2,16 @@ using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Behaviors;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using System.Security.Claims;
 using BuildingBlocks.Application.Common.Services;
 using Xunit;
-using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 
 public class AuthorizationBehaviorTests
 {
-    private class TestSecuredRequest : IRequest<Result>, ISecuredRequest
+    private class TestSecuredRequest : IRequest<IResult>, ISecuredRequest
     {
         public string Data { get; set; } = string.Empty;
     }
@@ -33,10 +33,10 @@ public class AuthorizationBehaviorTests
         
         var currentUserService = new CurrentUserService(httpContextAccessor);
 
-        var behavior = new AuthorizationBehavior<TestSecuredRequest, Result>(currentUserService);
+        var behavior = new AuthorizationBehavior<TestSecuredRequest, IResult>(currentUserService);
         var request = new TestSecuredRequest();
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -53,15 +53,14 @@ public class AuthorizationBehaviorTests
         
         var currentUserService = new CurrentUserService(httpContextAccessor);
 
-        var behavior = new AuthorizationBehavior<TestSecuredRequest, Result>(currentUserService);
+        var behavior = new AuthorizationBehavior<TestSecuredRequest, IResult>(currentUserService);
         var request = new TestSecuredRequest();
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Unauthorized, result.Error);
+        Assert.IsType<UnauthorizedHttpResult>(result);
     }
 
     [Fact]
@@ -78,14 +77,13 @@ public class AuthorizationBehaviorTests
 
         var currentUserService = new CurrentUserService(httpContextAccessor);
 
-        var behavior = new AuthorizationBehavior<TestSecuredRequest, Result>(currentUserService);
+        var behavior = new AuthorizationBehavior<TestSecuredRequest, IResult>(currentUserService);
         var request = new TestSecuredRequest();
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Unauthorized, result.Error);
+        Assert.IsType<UnauthorizedHttpResult>(result);
     }
 } 

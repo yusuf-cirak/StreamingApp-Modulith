@@ -2,6 +2,7 @@
 using BuildingBlocks.Application.Common.Services;
 using MediatR;
 using BuildingBlocks.Application.Abstractions.Managers;
+using Microsoft.AspNetCore.Http;
 
 namespace BuildingBlocks.Application.Common.Behaviors;
 
@@ -10,26 +11,24 @@ public sealed class SensitiveRequestBehavior<TRequest, TResponse>(
     IBlackListManager blacklistManager)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ISensitiveRequest
-    where TResponse : Result
+    where TResponse : IResult
 {
-    private static TResponse CreateUnauthorizedResult()
-    {
-        return ResultCache.Unauthorized.ToTypedResult<TResponse>();
-    }
+    private static readonly TResponse UnauthorizedResult = (TResponse)Results.Unauthorized();
+    private static readonly TResponse ForbiddenResult = (TResponse)Results.Forbid();
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
         if (!currentUserService.IsAuthenticated)
         {
-            return CreateUnauthorizedResult();
+            return UnauthorizedResult;
         }
 
         var blacklistResult = await blacklistManager.IsBlackListedAsync(currentUserService.UserId.GetValueOrFail());
         
         if (blacklistResult.IsSuccess)
         {
-            return CreateUnauthorizedResult();
+            return ForbiddenResult;
         }
 
         return await next();

@@ -7,8 +7,11 @@ using BuildingBlocks.Application.Common.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
+using BuildingBlocks.Application.UnitTests.Mocks;
 using Xunit;
 using YC.Monad;
 
@@ -16,16 +19,13 @@ namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 
 public class PipelineBehaviorIntegrationTests
 {
-    // Test request with Result<T>
-    private record TestRequest : IRequest<Result<TestResponse>>, ISecuredRequest, ISensitiveRequest, ILockRequest
+    private record TestRequest : IRequest<IResult>, ISecuredRequest, ISensitiveRequest, ILockRequest
     {
         public string Name { get; init; } = string.Empty;
         public string Key => "test-key";
         public int Expiration => 30;
         public bool ReleaseImmediately => true;
     }
-
-    private record TestResponse(string Message);
 
     // Validator for TestRequest
     private class TestRequestValidator : AbstractValidator<TestRequest>
@@ -37,11 +37,11 @@ public class PipelineBehaviorIntegrationTests
     }
 
     // Handler for TestRequest
-    private class TestRequestHandler : IRequestHandler<TestRequest, Result<TestResponse>>
+    private class TestRequestHandler : IRequestHandler<TestRequest, IResult>
     {
-        public Task<Result<TestResponse>> Handle(TestRequest request, CancellationToken cancellationToken)
+        public Task<IResult> Handle(TestRequest request, CancellationToken cancellationToken)
         {
-            return Task.FromResult(Result<TestResponse>.Success(new TestResponse($"Hello, {request.Name}!")));
+            return Task.FromResult<IResult>(Results.Ok($"Hello, {request.Name}!"));
         }
     }
 
@@ -50,10 +50,7 @@ public class PipelineBehaviorIntegrationTests
         var services = new ServiceCollection();
 
         // Register MediatR
-        services.AddMediatR(cfg =>
-        {
-            cfg.RegisterServicesFromAssemblyContaining<TestRequest>();
-        });
+        services.AddMediatR(cfg => { cfg.RegisterServicesFromAssemblyContaining<TestRequest>(); });
 
         // Register validators
         services.AddScoped<IValidator<TestRequest>, TestRequestValidator>();
@@ -65,7 +62,7 @@ public class PipelineBehaviorIntegrationTests
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LockBehavior<,>));
 
         // Register handler
-        services.AddScoped<IRequestHandler<TestRequest, Result<TestResponse>>, TestRequestHandler>();
+        services.AddScoped<IRequestHandler<TestRequest, IResult>, TestRequestHandler>();
 
         // Setup authentication
         var claims = new List<Claim>
@@ -89,56 +86,14 @@ public class PipelineBehaviorIntegrationTests
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Setup blacklist manager
-        services.AddScoped<IBlackListManager>(_ => new TestBlackListManager(isBlacklisted));
+        services.AddScoped<IBlackListManager>(_ => new MockBlackListManager(isBlacklisted));
 
         // Setup cache service
-        services.AddScoped<ICacheService>(_ => new TestCacheService(true));
+        services.AddScoped<ICacheService>(_ => new MockCacheService(true));
 
         return services.BuildServiceProvider();
     }
 
-    private class TestBlackListManager : IBlackListManager
-    {
-        private readonly bool _isBlacklisted;
-
-        public TestBlackListManager(bool isBlacklisted)
-        {
-            _isBlacklisted = isBlacklisted;
-        }
-
-        public Task<Result> AddToBlackListAsync(string key) => Task.FromResult(Result.Success());
-        public Task<Result> IsBlackListedAsync(string key) => Task.FromResult(_isBlacklisted ? Result.Success() : Result.Failure());
-        public Task<Result> RemoveFromBlackListAsync(string key) => Task.FromResult(Result.Success());
-    }
-
-    private class TestCacheService : ICacheService
-    {
-        private readonly bool _lockAcquired;
-
-        public TestCacheService(bool lockAcquired)
-        {
-            _lockAcquired = lockAcquired;
-        }
-
-        public Task<T> GetAsync<T>(string key, CancellationToken cancellationToken = default) 
-            => throw new NotImplementedException();
-
-        public Task<T> GetOrAddAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiresIn = null, CancellationToken cancellationToken = default) 
-            => throw new NotImplementedException();
-
-        public Task<T> GetOrUseFactoryAsync<T>(string key, Func<Task<T>> factory, CancellationToken cancellationToken = default) 
-            => throw new NotImplementedException();
-
-        public Task<bool> RemoveAsync(string key) 
-            => throw new NotImplementedException();
-
-        public Task<bool> ReleaseLockAsync(string key) => Task.FromResult(true);
-
-        public Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiresIn = null, CancellationToken cancellationToken = default) 
-            => throw new NotImplementedException();
-
-        public Task<bool> TakeLockAsync(string key, TimeSpan expiration) => Task.FromResult(_lockAcquired);
-    }
 
     [Fact]
     public async Task Pipeline_WithValidAuthenticatedRequest_Succeeds()
@@ -152,8 +107,9 @@ public class PipelineBehaviorIntegrationTests
         var result = await mediator.Send(request);
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal("Hello, Test User!", result.Value.Message);
+        Assert.IsType<Ok<string>>(result);
+        var okResult = (Ok<string>)result;
+        Assert.Equal("Hello, Test User!", okResult.Value);
     }
 
     [Fact]
@@ -168,8 +124,9 @@ public class PipelineBehaviorIntegrationTests
         var result = await mediator.Send(request);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Contains("Name is required", result.Error.Message);
+        Assert.IsType<BadRequest<string>>(result);
+        var badRequestResult = (BadRequest<string>)result;
+        Assert.Contains("Name is required", badRequestResult.Value?.ToString());
     }
 
     [Fact]
@@ -184,12 +141,11 @@ public class PipelineBehaviorIntegrationTests
         var result = await mediator.Send(request);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Unauthorized, result.Error);
+        Assert.IsType<UnauthorizedHttpResult>(result);
     }
 
     [Fact]
-    public async Task Pipeline_WithBlacklistedUser_ReturnsUnauthorized()
+    public async Task Pipeline_WithBlacklistedUser_ReturnsForbid()
     {
         // Arrange
         var provider = CreateServiceProvider(isAuthenticated: true, isBlacklisted: true);
@@ -200,7 +156,6 @@ public class PipelineBehaviorIntegrationTests
         var result = await mediator.Send(request);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Unauthorized, result.Error);
+        Assert.IsType<ForbidHttpResult>(result);
     }
-} 
+}

@@ -3,60 +3,33 @@ using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Behaviors;
 using BuildingBlocks.Application.Common.Services;
 using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using System.Security.Claims;
+using BuildingBlocks.Application.UnitTests.Mocks;
+using Xunit;
 using YC.Monad;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 
 public class SensitiveRequestBehaviorTests
 {
-    private class TestSensitiveRequest : IRequest<Result>, ISensitiveRequest
+    private class TestSensitiveRequest : IRequest<IResult>, ISensitiveRequest
     {
         public string Data { get; set; } = string.Empty;
-    }
-
-    private class TestCurrentUserService : ICurrentUserService
-    {
-        private readonly string? _userId;
-
-        public TestCurrentUserService(string? userId = null)
-        {
-            _userId = userId;
-        }
-
-        public Option<System.Security.Claims.ClaimsPrincipal> User => throw new NotImplementedException();
-        public Option<string> UserId => _userId;
-        public bool IsAuthenticated => _userId != null;
-    }
-
-    private class TestBlackListManager : IBlackListManager
-    {
-        private readonly bool _isBlacklisted;
-
-        public TestBlackListManager(bool isBlacklisted = false)
-        {
-            _isBlacklisted = isBlacklisted;
-        }
-
-        public Task<Result> AddToBlackListAsync(string key)
-            => Task.FromResult(Result.Success());
-
-        public Task<Result> IsBlackListedAsync(string key)
-            => Task.FromResult(_isBlacklisted ? Result.Success() : Result.Failure());
-
-        public Task<Result> RemoveFromBlackListAsync(string key)
-            => Task.FromResult(Result.Success());
     }
 
     [Fact]
     public async Task Handle_WithNonBlacklistedUser_CallsNextDelegate()
     {
         // Arrange
-        var currentUserService = new TestCurrentUserService("test-user");
-        var blackListManager = new TestBlackListManager(isBlacklisted: false);
-        var behavior = new SensitiveRequestBehavior<TestSensitiveRequest, Result>(currentUserService, blackListManager);
+        var currentUserService = new MockCurrentUserService("test-user");
+        var blackListManager = new MockBlackListManager(isBlacklisted: false);
+        var behavior =
+            new SensitiveRequestBehavior<TestSensitiveRequest, IResult>(currentUserService, blackListManager);
         var request = new TestSensitiveRequest();
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -66,36 +39,36 @@ public class SensitiveRequestBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_WithBlacklistedUser_ReturnsUnauthorized()
+    public async Task Handle_WithBlacklistedUser_ReturnsForbid()
     {
         // Arrange
-        var currentUserService = new TestCurrentUserService("test-user");
-        var blackListManager = new TestBlackListManager(isBlacklisted: true);
-        var behavior = new SensitiveRequestBehavior<TestSensitiveRequest, Result>(currentUserService, blackListManager);
+        var currentUserService = new MockCurrentUserService("test-user");
+        var blackListManager = new MockBlackListManager(isBlacklisted: true);
+        var behavior =
+            new SensitiveRequestBehavior<TestSensitiveRequest, IResult>(currentUserService, blackListManager);
         var request = new TestSensitiveRequest();
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Unauthorized, result.Error);
+        Assert.IsType<ForbidHttpResult>(result);
     }
 
     [Fact]
     public async Task Handle_WithNoUserId_ReturnsUnauthorized()
     {
         // Arrange
-        var currentUserService = new TestCurrentUserService(null);
-        var blackListManager = new TestBlackListManager();
-        var behavior = new SensitiveRequestBehavior<TestSensitiveRequest, Result>(currentUserService, blackListManager);
+        var currentUserService = new MockCurrentUserService(null);
+        var blackListManager = new MockBlackListManager(true);
+        var behavior =
+            new SensitiveRequestBehavior<TestSensitiveRequest, IResult>(currentUserService, blackListManager);
         var request = new TestSensitiveRequest();
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCache.Unauthorized, result.Error);
+        Assert.IsType<UnauthorizedHttpResult>(result);
     }
-} 
+}

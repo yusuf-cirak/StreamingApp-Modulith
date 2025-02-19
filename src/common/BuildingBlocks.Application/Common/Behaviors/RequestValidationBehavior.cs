@@ -1,13 +1,14 @@
 ﻿using System.Text;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 
 namespace BuildingBlocks.Application.Common.Behaviors;
 
 public sealed class RequestValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : Result
+    where TResponse : IResult
 {
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
@@ -27,8 +28,8 @@ public sealed class RequestValidationBehavior<TRequest, TResponse>(IEnumerable<I
 
         if (validationErrorMessage.Length > 0)
         {
-            var result = Result.Failure(validationErrorMessage).ToTypedResult<TResponse>();
-            return Task.FromResult(result);
+            var result = validationErrorMessage;
+            return Task.FromResult((TResponse)Results.BadRequest(result));
         }
 
         return next();

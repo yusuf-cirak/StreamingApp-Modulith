@@ -1,22 +1,22 @@
 ﻿using BuildingBlocks.Application.Abstractions.Security;
 using BuildingBlocks.Application.Common.Services;
 using MediatR;
-using YC.Monad;
+using Microsoft.AspNetCore.Http;
 
 namespace BuildingBlocks.Application.Common.Behaviors;
 
 public sealed class AuthorizationBehavior<TRequest, TResponse>(ICurrentUserService currentUserService)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ISecuredRequest
-    where TResponse : Result
+    where TResponse : IResult
 {
+    private static readonly Task<TResponse> UnauthorizedResult = Task.FromResult((TResponse)Results.Unauthorized());
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
         if (!currentUserService.IsAuthenticated)
         {
-            var result = ResultCache.Unauthorized.ToTypedResult<TResponse>();
-            return Task.FromResult(result);
+            return UnauthorizedResult;
         }
 
         return next();

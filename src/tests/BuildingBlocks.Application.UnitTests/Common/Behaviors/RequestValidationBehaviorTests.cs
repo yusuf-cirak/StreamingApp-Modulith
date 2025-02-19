@@ -1,13 +1,17 @@
 using BuildingBlocks.Application.Common.Behaviors;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
-using YC.Monad;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Xunit;
 
 namespace BuildingBlocks.Application.UnitTests.Common.Behaviors;
 
 public class RequestValidationBehaviorTests
 {
-    private class TestRequest : IRequest<Result>
+    private class TestRequest : IRequest<IResult>
     {
         public string Name { get; set; } = string.Empty;
     }
@@ -27,10 +31,10 @@ public class RequestValidationBehaviorTests
     {
         // Arrange
         var validators = new List<IValidator<TestRequest>> { new TestRequestValidator() };
-        var behavior = new RequestValidationBehavior<TestRequest, Result>(validators);
+        var behavior = new RequestValidationBehavior<TestRequest, IResult>(validators);
         var request = new TestRequest { Name = "Test" };
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -44,15 +48,16 @@ public class RequestValidationBehaviorTests
     {
         // Arrange
         var validators = new List<IValidator<TestRequest>> { new TestRequestValidator() };
-        var behavior = new RequestValidationBehavior<TestRequest, Result>(validators);
+        var behavior = new RequestValidationBehavior<TestRequest, IResult>(validators);
         var request = new TestRequest { Name = string.Empty };
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Contains("Name is required", result.Error.Message);
+        Assert.IsType<BadRequest<string>>(result);
+        var badRequestResult = (BadRequest<string>)result;
+        Assert.Contains("Name is required", badRequestResult.Value?.ToString());
     }
 
     [Fact]
@@ -60,10 +65,10 @@ public class RequestValidationBehaviorTests
     {
         // Arrange
         var validators = new List<IValidator<TestRequest>>();
-        var behavior = new RequestValidationBehavior<TestRequest, Result>(validators);
+        var behavior = new RequestValidationBehavior<TestRequest, IResult>(validators);
         var request = new TestRequest();
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -81,16 +86,18 @@ public class RequestValidationBehaviorTests
         validator2.RuleFor(x => x.Name).Must(x => x.Length >= 3).WithMessage("Name must be at least 3 characters");
 
         var validators = new List<IValidator<TestRequest>> { validator1, validator2 };
-        var behavior = new RequestValidationBehavior<TestRequest, Result>(validators);
+        var behavior = new RequestValidationBehavior<TestRequest, IResult>(validators);
         var request = new TestRequest { Name = string.Empty };
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult(Result.Success()), CancellationToken.None);
+        var result = await behavior.Handle(request, () => Task.FromResult(Results.Ok()), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsFailure);
-        Assert.Contains("Name is required", result.Error.Message);
-        Assert.Contains("Name must be at least 3 characters", result.Error.Message);
+        Assert.IsType<BadRequest<string>>(result);
+        var badRequestResult = (BadRequest<string>)result;
+        var errorMessage = badRequestResult.Value?.ToString();
+        Assert.Contains("Name is required", errorMessage);
+        Assert.Contains("Name must be at least 3 characters", errorMessage);
     }
 
     [Fact]
@@ -98,10 +105,10 @@ public class RequestValidationBehaviorTests
     {
         // Arrange
         var validators = new List<IValidator<TestRequest>> { new EmptyValidator() };
-        var behavior = new RequestValidationBehavior<TestRequest, Result>(validators);
+        var behavior = new RequestValidationBehavior<TestRequest, IResult>(validators);
         var request = new TestRequest();
-        var expectedResult = Result.Success();
-        RequestHandlerDelegate<Result> next = () => Task.FromResult(expectedResult);
+        var expectedResult = Results.Ok();
+        RequestHandlerDelegate<IResult> next = () => Task.FromResult(expectedResult);
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
